@@ -164,6 +164,34 @@ $T2U(x) = x + 2^w \quad if \quad x < 0$
 - Operation
     - u >> k == [u / $2^k$] unsigned
 
+### Problems with Unsigned Arithmetic
+#### Example 1
+```c++
+unsigned i;
+for (i = cnt-2 ; i>=0 ; i--)
+    a[i] += a[i+1];
+```
+i被定义为unsigned，但在for循环的判断条件中，我们检查i是否大于等于0。由于unsigned类型的整数始终是非负的，这样的判断永远都是真，导致这个循环会无限地执行。
+
+当i达到0并执行i--操作时，i不会变为-1。相反，它会下溢并变成unsigned的最大值（通常是UINT_MAX，例如在32位系统上为4294967295）。接下来的迭代将试图访问a[i]和a[i+1]，这很可能会导致数组越界，并产生不可预测的行为。
+
+正确的写法是，使用$i<cnt$作为循环的终止条件。
+
+#### Example 2
+```c++
+#define DELTA sizeof(int)
+int i;
+for (i = CNT ; i-DELTA >= 0 ; i-=DELTA)
+    ...
+```
+sizeof操作返回的类型是size_t，是一个无符号类型，i-DELTA在运算过程中会被转换为无符号类型，即i-DELTA≥0永远为真，导致这个循环会无限地执行。
+
+正确的写法是，使用size_t i而非int i；使用$i<cnt$而非$i-DELTA>=0$作为循环的终止条件。
+
+#### When to Use Unsigned Arithmetic
+- Do use when performing modular arithmetic
+- Do use when using bits to represent sets
+
 ### Byte Ordering
 - Big endian
     - Most significant byte at lowest address
@@ -175,5 +203,14 @@ $T2U(x) = x + 2^w \quad if \quad x < 0$
     - e.g. 0x01234567
         - 0x67 at lowest address
         - 0x01 at highest address
+![Alt text](1694594369037.png)
 
 Internet Protocol (IP) uses big endian, while Intel uses little endian.
+
+### Representing Strings
+- ASCII
+    - 7-bit character set
+    - 128 characters
+    - final bit is always 0
+    - byte ordering not an issue **字符串的存储顺序与字节顺序无关**，只有多字节的数据类型才会有字节顺序的问题
+
