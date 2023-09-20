@@ -1,4 +1,4 @@
-# Lecture 2
+# Floating Point
 
 ### Fractional Binary Numbers
 
