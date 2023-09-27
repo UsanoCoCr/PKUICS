@@ -138,7 +138,7 @@ objdump -d hello.o
     - dest = &source
 
 - Uses:
-    - **computing addresses without a memory reference**
+    - **computing addresses without a memory reference**, 即计算地址时不会访问内存
         -e.g. p = &a[i]
 
     - computing arithmetic expressions of the form x + k * y (k = 1, 2, 4, 8)

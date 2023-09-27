@@ -203,6 +203,7 @@ sizeof操作返回的类型是size_t，是一个无符号类型，i-DELTA在运�
     - e.g. 0x01234567
         - 0x67 at lowest address
         - 0x01 at highest address
+- 小端法先读高地址，大端法读低地址
 ![Alt text](1694594369037.png)
 
 Internet Protocol (IP) uses big endian, while Intel uses little endian.
