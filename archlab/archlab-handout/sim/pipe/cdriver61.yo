@@ -1,0 +1,60 @@
+                            | #######################################################################
+                            | # Test for copying block of size 61;
+                            | #######################################################################
+0x000:                      | 	.pos 0
+0x000: 30f4e809000000000000 | main:	irmovq Stack, %rsp  	# Set up stack pointer
+                            | 
+                            | 	# Set up arguments for copy function and then invoke it
+0x00a: 30f23d00000000000000 | 	irmovq $61, %rdx		# src and dst have 61 elements
+0x014: 30f67807000000000000 | 	irmovq dest, %rsi	# dst array
+0x01e: 30f78005000000000000 | 	irmovq src, %rdi	# src array
+0x028: 803b00000000000000   | 	call ncopy		 
+0x031: 801704000000000000   | 	call check	        # Call checker code
+0x03a: 00                   | 	halt                    # should halt with 0xaaaa in %rax
+0x03b:                      | StartFun:
+                            | #/* $begin ncopy-ys */
+                            | ##################################################################
+                            | # ncopy.ys - Copy a src block of len words to dst.
+                            | # Return the number of positive words (>0) contained in src.
+                            | #
+                            | # Include your name and ID here.
+                            | # 康子熙, 2200017416
+                            | #
+                            | # Describe how and why you modified the baseline code.
+                            | # 在汇编层面，我借鉴了csapp书中5.8章节的循环展开，将每次循环展开为10次，这样可以减少循环次数，提高效率。同时，针对余数部分，我使用树构建了一个分支跳转，让每个可能的取值经过很少的跳转可以达到最后的计算位置，减少了跳转次数和代码量，提高了效率。
+                            | # 在HCL方面，我首先借鉴partB的思路，添加了iaddq指令。同时对于数据冒险的部分，我使用了书中所说的bypassing的技巧，使得两条连续的指令不需要bubble，提高了效率。
+                            | ##################################################################
+                            | # Do not modify this portion
+                            | # Function prologue.
+                            | # %rdi = src, %rsi = dst, %rdx = len
+0x03b:                      | ncopy:
+                            | 
+                            | ##################################################################
+                            | # You can modify this portion
+                            | 	# Loop header
+                            | 	#xorq %rax,%rax		# count = 0;
+0x03b: c0f2f6ffffffffffffff | 	iaddq $-10, %rdx		# len -= 10
+0x045: 720f02000000000000   | 	jl Tree
+0x04e:                      | n1:
+0x04e: 50a70000000000000000 | 	mrmovq (%rdi), %r10		# read val from src...
+0x058: 40a60000000000000000 | 	rmmovq %r10, (%rsi)		# ...and store it to dst
+0x062: 62aa                 | 	andq %r10, %r10		# val <= 0?
+0x064: 717700000000000000   | 	jle n2
+0x06d: c0f00100000000000000 | 	iaddq $1, %rax 	# count++
+0x077:                      | n2:
+0x077: 50b70800000000000000 | 	mrmovq 8(%rdi), %r11	# read val from src...
+0x081: 40b60800000000000000 | 	rmmovq %r11, 8(%rsi)	# ...and store it to dst
+0x08b: 62bb                 | 	andq %r11, %r11		# val <= 0?
+0x08d: 71a000000000000000   | 	jle n3
+0x096: c0f00100000000000000 | 	iaddq $1, %rax 	# count++
+0x0a0:                      | n3:
+0x0a0: 50a71000000000000000 | 	mrmovq 16(%rdi), %r10	# read val from src...
+0x0aa: 40a61000000000000000 | 	rmmovq %r10, 16(%rsi)	# ...and store it to dst
+0x0b4: 62aa                 | 	andq %r10, %r10		# val <= 0?
+0x0b6: 71c900000000000000   | 	jle n4
+0x0bf: c0f00100000000000000 | 	iaddq $1,%rax 	# count++
+0x0c9:                      | n4:
+0x0c9: 50b71800000000000000 | 	mrmovq 24(%rdi), %r11
+0x0d3: 40b61800000000000000 | 	rmmovq %r11, 24(%rsi)
+0x0dd: 62bb                 | 	andq %r11, %r11
+0x

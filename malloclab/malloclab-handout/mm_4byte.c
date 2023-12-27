@@ -63,8 +63,8 @@
 
 /* Global variables */
 static char *heap_listp = 0;       /* Pointer to first block */
-static char *free_start[17] = {0}; /* begin of the free list */
-static char *free_tail[17] = {0};  /* tail of the free list */
+static char *free_start[26] = {0}; /* begin of the free list */
+static char *free_tail[26] = {0};  /* tail of the free list */
 
 /* Function prototypes for internal helper routines */
 static void *extend_heap(size_t words);
@@ -94,14 +94,14 @@ int mm_init(void)
     PUT(heap_listp + (3 * WSIZE), PACK(0, 3));     /* Epilogue header */
     heap_listp += (2 * WSIZE);
 
-    for (int i = 0; i < 17; i++)
+    for (int i = 0; i < 26; i++)
     {
         free_start[i] = NULL;
         free_tail[i] = NULL;
     }
 
     /* Extend the empty heap with a free block of CHUNKSIZE bytes */
-    if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
+    if (extend_heap(CHUNKSIZE) == NULL)
         return -1;
     return 0;
 }
@@ -125,9 +125,13 @@ void *malloc(size_t size)
 
     /* Adjust block size to include overhead and alignment reqs. */
     if (size <= DSIZE + WSIZE)
+    {
         asize = 2 * DSIZE;
+    }
     else
+    {
         asize = DSIZE * ((size + (WSIZE) + (DSIZE - 1)) / DSIZE);
+    }
 
     /* Search the free list for a fit */
     if ((bp = find_fit(asize)) != NULL)
@@ -252,6 +256,70 @@ static int aligned(const void *p)
  */
 void mm_checkheap(int lineno)
 {
+    char *bp = heap_listp;
+
+    // Check prologue block
+    if (GET_SIZE(HDRP(heap_listp)) != DSIZE || !GET_ALLOC(HDRP(heap_listp)))
+    {
+        printf("Error: bad prologue header at line: %d\n", lineno);
+        exit(1);
+    }
+
+    // Check all blocks for conditions
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        // Check each block’s address alignment and heap boundaries
+        if (!in_heap(bp) || !aligned(bp))
+        {
+            printf("Error: bad block address at line: %d\n", lineno);
+            exit(1);
+        }
+
+        // Check each block’s header and footer
+        if (GET(HDRP(bp)) != GET(FTRP(bp)))
+        {
+            printf("Error: header does not match footer at line: %d\n", lineno);
+            exit(1);
+        }
+    }
+
+    // Check each free block in the free list
+    for (int i = 0; i < 17; i++)
+    {
+        for (bp = free_start[i]; bp != NULL; bp = SUCC(bp))
+        {
+            // Check coalescing: no two consecutive free blocks in the heap
+            if (!GET_ALLOC(HDRP(bp)) && !GET_ALLOC(HDRP(NEXT_BLKP(bp))))
+            {
+                printf("Error: two consecutive free blocks in the heap at line: %d\n", lineno);
+                exit(1);
+            }
+
+            // Check each free block’s next and previous pointers
+            if (SUCC(bp) != NULL && PRED(SUCC(bp)) != bp)
+            {
+                printf("Error: next/previous pointers mismatch at line: %d\n", lineno);
+                exit(1);
+            }
+
+            // Check if every free block actually in the free list
+            if (bp != free_start[i] && PRED(bp) == NULL)
+            {
+                printf("Error: free block not in the free list at line: %d\n", lineno);
+                exit(1);
+            }
+        }
+    }
+
+    // Check coalescing: no two consecutive free blocks in the heap
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp))
+    {
+        if (!GET_ALLOC(HDRP(bp)) && !GET_ALLOC(HDRP(NEXT_BLKP(bp))))
+        {
+            printf("Error: two consecutive free blocks in the heap at line: %d\n", lineno);
+            exit(1);
+        }
+    }
 }
 
 /*
@@ -353,13 +421,25 @@ static void place(void *bp, size_t asize)
 static void *find_fit(size_t asize)
 {
     int index = get_index(asize);
-    for (int i = index; i < 17; i++)
+    for (int i = index; i < 26; i++)
     {
-        void *temp = free_tail[i];
-        for (; temp != NULL; temp = PRED(temp))
+        if (i > 14)
         {
-            if (GET_SIZE(HDRP(temp)) >= asize)
-                return temp;
+            void *temp = free_start[i];
+            for (; temp != NULL; temp = SUCC(temp))
+            {
+                if (GET_SIZE(HDRP(temp)) >= asize)
+                    return temp;
+            }
+        }
+        else
+        {
+            void *temp = free_tail[i];
+            for (; temp != NULL; temp = PRED(temp))
+            {
+                if (GET_SIZE(HDRP(temp)) >= asize)
+                    return temp;
+            }
         }
     }
 
@@ -420,37 +500,55 @@ static int get_index(size_t size)
 {
     if (size <= 16)
         return 0;
-    if (size <= 24)
+    if (size <= 20)
         return 1;
-    if (size <= 32)
+    if (size <= 24)
         return 2;
-    if (size <= 48)
+    if (size == 32)
         return 3;
-    if (size <= 64)
+    if (size <= 48)
         return 4;
-    if (size <= 96)
+    if (size <= 64)
         return 5;
-    if (size <= 128)
+    if (size <= 96)
         return 6;
-    if (size <= 256)
+    if (size <= 128)
         return 7;
-    if (size <= 512)
+    if (size <= 144)
         return 8;
-    if (size <= 1024)
+    if (size <= 256)
         return 9;
-    if (size <= 2048)
+    if (size <= 512)
         return 10;
-    if (size <= 4096)
+    if (size <= 608)
         return 11;
-    if (size <= 8192)
+    if (size <= 768)
         return 12;
-    if (size <= 16384)
+    if (size <= 1024)
         return 13;
-    if (size <= 32768)
+    if (size <= 1240)
         return 14;
-    if (size <= 65536)
+    if (size <= 2048)
         return 15;
-    return 16;
+    if (size <= 3072)
+        return 16;
+    if (size <= 4096)
+        return 17;
+    if (size <= 8192)
+        return 18;
+    if (size <= 10240)
+        return 19;
+    if (size <= 12288)
+        return 20;
+    if (size <= 16384)
+        return 21;
+    if (size <= 20480)
+        return 22;
+    if (size <= 24576)
+        return 23;
+    if (size <= 32768)
+        return 24;
+    return 25;
 }
 
 static void *PRED(void *bp)

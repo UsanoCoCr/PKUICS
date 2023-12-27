@@ -1,0 +1,61 @@
+    .pos 0
+    irmovq stack, %rsp
+    call main
+    halt
+
+.align 8
+Array:
+    .quad 0xbca
+    .quad 0xcba
+    .quad 0xacb
+    .quad 0xcab
+    .quad 0xabc
+    .quad 0xbac
+
+main:
+    irmovq Array, %rdi
+    irmovq $48, %rsi
+    call bubble_sort
+    ret
+
+bubble_sort:
+# i in %r8, last in %r9
+    rrmovq %rdi, %r9
+    addq %rsi, %r9
+    jmp judge_1
+
+loop_1:
+    rrmovq %rdi, %r8
+    jmp judge_2
+
+loop_2:
+    mrmovq 8(%r8), %r10
+    mrmovq (%r8), %r11
+    subq %r10, %r11
+    jle skip_swap
+    mrmovq (%r8), %r11
+    rmmovq %r11, 8(%r8)
+    rmmovq %r10, (%r8)
+
+skip_swap:
+    irmovq $8, %r10
+    addq %r10, %r8
+
+judge_2:
+    rrmovq %r8, %r10
+    rrmovq %r9, %r11
+    subq %r10, %r11
+    jg loop_2
+
+judge_1:
+    irmovq $8, %r10
+    subq %r10, %r9
+    rrmovq %rdi, %r10
+    rrmovq %r9, %r11
+    subq %r10, %r11
+    jg loop_1
+    ret
+
+# Stack starts here and grows to lower addresses
+    .pos 0x200
+stack:

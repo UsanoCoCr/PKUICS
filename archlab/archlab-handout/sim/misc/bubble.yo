@@ -1,0 +1,61 @@
+0x000:                      |     .pos 0
+0x000: 30f40002000000000000 |     irmovq stack, %rsp
+0x00a: 804800000000000000   |     call main
+0x013: 00                   |     halt
+                            | 
+0x018:                      | .align 8
+0x018:                      | Array:
+0x018: ca0b000000000000     |     .quad 0xbca
+0x020: ba0c000000000000     |     .quad 0xcba
+0x028: cb0a000000000000     |     .quad 0xacb
+0x030: ab0c000000000000     |     .quad 0xcab
+0x038: bc0a000000000000     |     .quad 0xabc
+0x040: ac0b000000000000     |     .quad 0xbac
+                            | 
+0x048:                      | main:
+0x048: 30f71800000000000000 |     irmovq Array, %rdi
+0x052: 30f63000000000000000 |     irmovq $48, %rsi
+0x05c: 806600000000000000   |     call bubble_sort
+0x065: 90                   |     ret
+                            | 
+0x066:                      | bubble_sort:
+                            | # i in %r8, last in %r9
+0x066: 2079                 |     rrmovq %rdi, %r9
+0x068: 6069                 |     addq %rsi, %r9
+0x06a: 70d600000000000000   |     jmp judge_1
+                            | 
+0x073:                      | loop_1:
+0x073: 2078                 |     rrmovq %rdi, %r8
+0x075: 70c700000000000000   |     jmp judge_2
+                            | 
+0x07e:                      | loop_2:
+0x07e: 50a80800000000000000 |     mrmovq 8(%r8), %r10
+0x088: 50b80000000000000000 |     mrmovq (%r8), %r11
+0x092: 61ab                 |     subq %r10, %r11
+0x094: 71bb00000000000000   |     jle skip_swap
+0x09d: 50b80000000000000000 |     mrmovq (%r8), %r11
+0x0a7: 40b80800000000000000 |     rmmovq %r11, 8(%r8)
+0x0b1: 40a80000000000000000 |     rmmovq %r10, (%r8)
+                            | 
+0x0bb:                      | skip_swap:
+0x0bb: 30fa0800000000000000 |     irmovq $8, %r10
+0x0c5: 60a8                 |     addq %r10, %r8
+                            | 
+0x0c7:                      | judge_2:
+0x0c7: 208a                 |     rrmovq %r8, %r10
+0x0c9: 209b                 |     rrmovq %r9, %r11
+0x0cb: 61ab                 |     subq %r10, %r11
+0x0cd: 767e00000000000000   |     jg loop_2
+                            | 
+0x0d6:                      | judge_1:
+0x0d6: 30fa0800000000000000 |     irmovq $8, %r10
+0x0e0: 61a9                 |     subq %r10, %r9
+0x0e2: 207a                 |     rrmovq %rdi, %r10
+0x0e4: 209b                 |     rrmovq %r9, %r11
+0x0e6: 61ab                 |     subq %r10, %r11
+0x0e8: 767300000000000000   |     jg loop_1
+0x0f1: 90                   |     ret
+                            | 
+                            | # Stack starts here and grows to lower addresses
+0x200:                      |     .pos 0x200
+0x200:                      | stack:

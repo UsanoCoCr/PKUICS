@@ -1,0 +1,175 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Include your name and ID here.
+# 康子熙, 2200017416
+#
+# Describe how and why you modified the baseline code.
+# 在汇编层面，我借鉴了csapp书中5.8章节的循环展开，将每次循环展开为10次，这样可以减少循环次数，提高效率。同时，针对余数部分，我使用树构建了一个分支跳转，让每个可能的取值经过很少的跳转可以达到最后的计算位置，减少了跳转次数和代码量，提高了效率。
+# 在HCL方面，我首先借鉴partB的思路，添加了iaddq指令。同时对于数据冒险的部分，我使用了书中所说的bypassing的技巧，使得两条连续的指令不需要bubble，提高了效率。
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	#xorq %rax,%rax		# count = 0;
+	iaddq $-10, %rdx		# len -= 10
+	jl Tree
+n1:
+	mrmovq (%rdi), %r10		# read val from src...
+	rmmovq %r10, (%rsi)		# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle n2
+	iaddq $1, %rax 	# count++
+n2:
+	mrmovq 8(%rdi), %r11	# read val from src...
+	rmmovq %r11, 8(%rsi)	# ...and store it to dst
+	andq %r11, %r11		# val <= 0?
+	jle n3
+	iaddq $1, %rax 	# count++
+n3:
+	mrmovq 16(%rdi), %r10	# read val from src...
+	rmmovq %r10, 16(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle n4
+	iaddq $1,%rax 	# count++
+n4:
+	mrmovq 24(%rdi), %r11
+	rmmovq %r11, 24(%rsi)
+	andq %r11, %r11
+	jle n5
+	iaddq $1, %rax 	# count++
+n5:
+	mrmovq 32(%rdi), %r10	# read val from src...
+	rmmovq %r10, 32(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle n6
+	iaddq $1, %rax 	# count++
+n6:
+	mrmovq 40(%rdi), %r11
+	rmmovq %r11, 40(%rsi)
+	andq %r11, %r11
+	jle n7
+	iaddq $1, %rax 	# count++
+n7:
+	mrmovq 48(%rdi), %r10	# read val from src...
+	rmmovq %r10, 48(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle n8
+	iaddq $1, %rax 	# count++
+n8:
+	mrmovq 56(%rdi), %r11
+	rmmovq %r11, 56(%rsi)
+	andq %r11, %r11
+	jle n9
+	iaddq $1, %rax 	# count++
+n9:
+	mrmovq 64(%rdi), %r10	# read val from src...
+	rmmovq %r10, 64(%rsi)	# ...and store it to dst
+	andq %r10, %r10		# val <= 0?
+	jle n10
+	iaddq $1, %rax 	# count++
+n10:
+	mrmovq 72(%rdi), %r11
+	rmmovq %r11, 72(%rsi)
+	andq %r11, %r11
+	jle n11
+	iaddq $1, %rax 	# count++
+n11:
+	iaddq $80, %rdi
+	iaddq $80, %rsi
+	iaddq $-10, %rdx
+	jge n1
+
+Tree:
+	iaddq $7, %rdx
+	jl Left
+	jg Right
+	je L3
+Left:
+	iaddq $2, %rdx
+	je L1
+	jg L2
+	ret
+L456:
+	iaddq $2, %rdx
+	jl L4
+	je L5
+	jg L6
+Right:
+	iaddq $-4, %rdx
+	jl L456
+	je L7
+	iaddq $-1, %rdx
+	je L8
+
+L9:
+	mrmovq 64(%rdi), %rbx
+	rmmovq %rbx, 64(%rsi)
+	andq %rbx, %rbx
+	jle L8
+	iaddq $1, %rax
+L8:
+	mrmovq 56(%rdi), %rcx
+	rmmovq %rcx, 56(%rsi)
+	andq %rcx, %rcx
+	jle L7 
+	iaddq $1, %rax
+L7:
+	mrmovq 48(%rdi), %r10
+	rmmovq %r10, 48(%rsi)
+	andq %r10, %r10
+	jle L6 
+	iaddq $1, %rax
+L6:
+	mrmovq 40(%rdi), %r11
+	rmmovq %r11, 40(%rsi)
+	andq %r11, %r11
+	jle L5
+	iaddq $1, %rax
+L5:
+	mrmovq 32(%rdi), %r12
+	rmmovq %r12, 32(%rsi)
+	andq %r12, %r12
+	jle L4
+	iaddq $1, %rax
+L4:
+	mrmovq 24(%rdi), %r13
+	rmmovq %r13, 24(%rsi)
+	andq %r13, %r13
+	jle L3
+	iaddq $1, %rax
+L3:m
+	mrmovq 16(%rdi), %r14
+	rmmovq %r14, 16(%rsi)
+	andq %r14, %r14
+	jle L2
+	iaddq $1, %rax
+L2:
+	mrmovq 8(%rdi), %r8
+	rmmovq %r8, 8(%rsi)
+	andq %r8, %r8
+	jle L1
+	iaddq $1, %rax
+L1:
+	mrmovq (%rdi), %r9
+	rmmovq %r9,(%rsi)
+	andq %r9, %r9
+	jle  Done
+	iaddq $1, %rax	
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
